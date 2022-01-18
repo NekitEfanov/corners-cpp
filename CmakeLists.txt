@@ -1,0 +1,29 @@
+cmake_minimum_required(VERSION 3.5)
+
+project(Corners-cpp VERSION 0.1 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
+set(SRC_DIR ${CMAKE_SOURCE_DIR}/src)
+
+include_directories(${INCLUDE_DIR})
+
+file(GLOB HEADERS "${INCLUDE_DIR}/*.h" "${INCLUDE_DIR}/*.hpp")
+file(GLOB SOURCES "${SRC_DIR}/*.c" "${SRC_DIR}/*.cpp")
+
+set(PROJECT_SOURCES ${SOURCES} ${HEADERS})
+
+find_package(SFML 2.5 
+    COMPONENTS 	
+        system window graphics audio REQUIRED)
+
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+add_executable(Corners-cpp ${PROJECT_SOURCES} )
+
+target_link_libraries(Corners-cpp sfml-system sfml-graphics sfml-audio sfml-window)
+
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
