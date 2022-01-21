@@ -28,13 +28,13 @@ public:
 		for (int8_t i = 0; i < 8; ++i)
 			m_board[i].resize(8);
 
-		for (int8_t i = 5; i < 8; ++i)
+		for (int8_t i = 0; i < 3; ++i)
 			for (int8_t j = 0; j < 3; ++j) {
 				m_board[i][j] = std::make_shared<checker>(cell{ i, j }, white);
 				m_whites.push_back(m_board[i][j]);
 			}
 
-		for (int8_t i = 0; i < 3; ++i)
+		for (int8_t i = 5; i < 8; ++i)
 			for (int8_t j = 5; j < 8; ++j) {
 				m_board[i][j] = std::make_shared<checker>(cell{ i, j }, black);
 				m_blacks.push_back(m_board[i][j]);
@@ -51,7 +51,7 @@ public:
 	/*! \brief Возвращает все 
 	 *	\return ....
 	 */
-	const std::vector<std::shared_ptr<piece>>& pieces() override {
+	std::vector<std::shared_ptr<piece>> pieces() override {
 		std::vector<std::shared_ptr<piece>> result;
 
 		result.insert(result.end(), m_whites.cbegin(), m_whites.cend());

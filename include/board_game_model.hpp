@@ -35,7 +35,7 @@ public:
 	/*! \brief Возвращает все 
 	 *	\return ....
 	 */
-	virtual const std::vector<std::shared_ptr<piece>>& pieces() = 0;
+	virtual std::vector<std::shared_ptr<piece>> pieces() = 0;
 
 	/*! \brief Возвращает все 
 	 *	\return ....
