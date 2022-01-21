@@ -24,6 +24,10 @@ public:
 		return m_size;
 	}
 
+	sf::Vector2f pos() const {
+		return m_sprite.getPosition();
+	}
+
 	void set_pos(float x, float y) {
 		m_sprite.setPosition(x, y);
 	}
@@ -100,12 +104,14 @@ public:
 
 
 	void loop() {
-		while (m_window->isOpen())
-		{
-			board.draw(*m_window);
+		while (m_window->isOpen()) {
+			make_sizes();
 
-			draw_pieces(white);
-			draw_pieces(black);
+			board.draw(*m_window);
+			draw_pieces();
+
+			if (m_active_cell.active())
+				m_active_cell.draw(*m_window);
 
 			m_window->display();
 
@@ -114,15 +120,19 @@ public:
 				if (event.type == sf::Event::Closed)
 					m_window->close();
 
-				if (event.mouseButton.button == sf::Mouse::Left) {
+				if (
+					event.mouseButton.button == sf::Mouse::Left
+					&& event.type == sf::Event::MouseButtonPressed
+				) {
+					process_click(event.mouseButton.x, event.mouseButton.y);
 
-
-					std::cout << "the right button was pressed" << std::endl;
+					std::cout << "the left button was pressed" << std::endl;
 					std::cout << "mouse x: " << event.mouseButton.x << std::endl;
 					std::cout << "mouse y: " << event.mouseButton.y << std::endl;
 				}
 			}
-				
+			
+
 		}
 	}
 
@@ -150,19 +160,61 @@ private:
 				m_cell_size_y / m_pieces[piece->m_pos.x][piece->m_pos.y]->shape().y
 			);
 		}
+
+		m_active_cell.set_scale(
+			m_cell_size_x / m_active_cell.shape().x,
+			m_cell_size_x / m_active_cell.shape().y
+		);
 	}
 
-	void draw_pieces(color_t color) {
-		make_sizes();
+	void draw_pieces() {
+		for (const auto& piece : m_model.pieces()) {
+			auto coords = cell_to_coord(piece->m_pos.x, piece->m_pos.y);
 
-		for (const auto& piece : m_model.pieces(color)) {
-			m_pieces[piece->m_pos.x][piece->m_pos.y]->set_pos(
-				m_border_size_x + m_cell_size_x * piece->m_pos.x,
-				m_border_size_y + m_cell_size_y * piece->m_pos.y
-			);
-
+			m_pieces[piece->m_pos.x][piece->m_pos.y]->set_pos(coords.x, coords.y);
 			m_pieces[piece->m_pos.x][piece->m_pos.y]->draw(*m_window);
 		}
+	}
+
+	void process_click(int x, int y) {
+		auto cell = coord_to_cell(x, y);
+
+		if (
+			cell.x < 0 || cell.x >= 8
+			|| cell.y < 0 || cell.y >= 8
+		)
+			return;
+
+		auto piece = m_model.get(cell.x, cell.y);
+
+		if (m_active_cell.active()) {
+			auto current_pos = m_active_cell.pos();
+			auto current_cell = coord_to_cell(current_pos.x, current_pos.y);
+
+			if (current_cell == cell || !piece || piece->m_color != white) {
+				m_active_cell.set_active(false);
+				return;
+			}
+		}
+
+		if (!piece || piece->m_color != white)
+			return;
+
+		auto coords = cell_to_coord(cell.x, cell.y);
+		m_active_cell.set_pos(coords.x, coords.y);
+
+		m_active_cell.set_active(true);
+	}
+
+	sf::Vector2i coord_to_cell(int x, int y) {
+		return {
+			(int)(float(x - m_border_size_x + 0.01 * m_cell_size_x) / m_cell_size_x),
+			(int)(float(y - m_border_size_y + 0.01 * m_cell_size_y) / m_cell_size_y)
+		};
+	}
+
+	sf::Vector2f cell_to_coord(int cx, int cy) {
+		return { m_border_size_x + m_cell_size_x * cx, m_border_size_y + m_cell_size_y * cy };
 	}
 
 	inline static const float border_coeff = 0.068;

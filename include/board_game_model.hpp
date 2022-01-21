@@ -32,6 +32,8 @@ public:
 	 */
 	virtual float position_weight() = 0;
 
+	virtual std::shared_ptr<piece> get(int x, int y) = 0;
+
 	/*! \brief Возвращает все 
 	 *	\return ....
 	 */

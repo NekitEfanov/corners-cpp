@@ -48,6 +48,13 @@ public:
 		return 0.f;
 	}
 
+	std::shared_ptr<piece> get(int x, int y) override {
+		if (x < 0 || x >= 8 || y < 0 || y >= 8)
+			throw std::invalid_argument("invalid board cell.");
+
+		return m_board[x][y];
+	}
+
 	/*! \brief Возвращает все 
 	 *	\return ....
 	 */
