@@ -12,7 +12,7 @@ public:
 		m_color = color;
 	}
 
-	const std::vector<cell>& moves() override {
+	const std::vector<cell>& moves() const override {
 		return m_moves;
 	}
 
@@ -28,13 +28,13 @@ public:
 		for (int8_t i = 0; i < 8; ++i)
 			m_board[i].resize(8);
 
-		for (int8_t i = 0; i < 3; ++i)
+		for (int8_t i = 5; i < 8; ++i)
 			for (int8_t j = 0; j < 3; ++j) {
 				m_board[i][j] = std::make_shared<checker>(cell{ i, j }, white);
 				m_whites.push_back(m_board[i][j]);
 			}
 
-		for (int8_t i = 5; i < 8; ++i)
+		for (int8_t i = 0; i < 3; ++i)
 			for (int8_t j = 5; j < 8; ++j) {
 				m_board[i][j] = std::make_shared<checker>(cell{ i, j }, black);
 				m_blacks.push_back(m_board[i][j]);
@@ -48,11 +48,11 @@ public:
 		return 0.f;
 	}
 
-	std::shared_ptr<piece> get(int x, int y) override {
-		if (x < 0 || x >= 8 || y < 0 || y >= 8)
+	std::shared_ptr<piece> get(const cell& c) override {
+		if (!primary_check(c))
 			throw std::invalid_argument("invalid board cell.");
 
-		return m_board[x][y];
+		return m_board[c.x][c.y];
 	}
 
 	/*! \brief Возвращает все 
@@ -81,7 +81,16 @@ public:
 	 *	\return ....
 	 */
 	void possible_moves(const piece& p, std::vector<cell>& result) override {
-		m_blacks;
+		cell c;
+		result.clear();
+
+		for (const auto& m : p.moves()) {
+			c.x = p.m_pos.x + m.x;
+			c.y = p.m_pos.y + m.y;
+
+			if (primary_check(c) && !m_board[c.x][c.y])
+				result.push_back(c);
+		}
 	}
 
 	/*! \brief Возвращает все 
@@ -89,10 +98,20 @@ public:
 	 */
 	bool is_move_possible(const piece& p, const cell& c) override {
 		// TODO
-		return
-			c.x >= 0 && c.y >= 0
-			&& c.x < 8 && c.y < 8
-			&& !m_board[c.x][c.y];
+		if (!primary_check(c) || !m_board[p.m_pos.x][p.m_pos.y])
+			return false;
+
+		cell diff;
+		diff.x = c.x - p.m_pos.x;
+		diff.y = c.y - p.m_pos.y;
+
+		return 
+			!m_board[c.x][c.y]
+			&& std::find(
+				p.moves().cbegin(),
+				p.moves().cend(),
+				diff
+			) != p.moves().cend();
 	}
 
 	/*! \brief Возвращает все 
@@ -114,6 +133,10 @@ public:
 	}
 
 private:
+	bool primary_check(const cell& c) {
+		return c.x >= 0 && c.x < 8 && c.y >= 0 && c.y < 8;
+	}
+
 	void move_unchecked(const piece& p, const cell& c) {
 		auto board_piece = m_board[p.m_pos.x][p.m_pos.y];
 		std::swap(m_board[p.m_pos.x][p.m_pos.y], m_board[c.x][c.y]);

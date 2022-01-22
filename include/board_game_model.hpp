@@ -13,12 +13,16 @@ constexpr const color_t black = false;
 struct cell {
 	int8_t x;
 	int8_t y;
+
+	friend bool operator==(const cell& left, const cell& right) {
+		return left.x == right.x && left.y == right.y;
+	}
 };
 
 
 class piece {
 public:
-	virtual const std::vector<cell>& moves() = 0;
+	virtual const std::vector<cell>& moves() const = 0;
 
 	cell m_pos;
 	color_t m_color;
@@ -32,7 +36,7 @@ public:
 	 */
 	virtual float position_weight() = 0;
 
-	virtual std::shared_ptr<piece> get(int x, int y) = 0;
+	virtual std::shared_ptr<piece> get(const cell& c) = 0;
 
 	/*! \brief Возвращает все 
 	 *	\return ....

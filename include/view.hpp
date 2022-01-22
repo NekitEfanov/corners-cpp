@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <memory>
 #include <iostream>
@@ -81,6 +81,14 @@ private:
 	bool m_active{ false };
 };
 
+class movement_mark : public active_cell {
+public:
+	movement_mark() {
+		load_sprite("point.png");
+	}
+};
+
+
 class corners_view {
 	using piece_holder = std::shared_ptr<view_object>;
 
@@ -102,7 +110,6 @@ public:
 		crate_pieces(width, heigth);
 	}
 
-
 	void loop() {
 		while (m_window->isOpen()) {
 			make_sizes();
@@ -110,8 +117,10 @@ public:
 			board.draw(*m_window);
 			draw_pieces();
 
-			if (m_active_cell.active())
+			if (m_active_cell.active()) {
 				m_active_cell.draw(*m_window);
+				draw_movements();
+			}
 
 			m_window->display();
 
@@ -123,16 +132,9 @@ public:
 				if (
 					event.mouseButton.button == sf::Mouse::Left
 					&& event.type == sf::Event::MouseButtonPressed
-				) {
+				)
 					process_click(event.mouseButton.x, event.mouseButton.y);
-
-					std::cout << "the left button was pressed" << std::endl;
-					std::cout << "mouse x: " << event.mouseButton.x << std::endl;
-					std::cout << "mouse y: " << event.mouseButton.y << std::endl;
-				}
 			}
-			
-
 		}
 	}
 
@@ -165,6 +167,11 @@ private:
 			m_cell_size_x / m_active_cell.shape().x,
 			m_cell_size_x / m_active_cell.shape().y
 		);
+
+		m_movement_mark.set_scale(
+			m_cell_size_x / m_movement_mark.shape().x,
+			m_cell_size_x / m_movement_mark.shape().y
+		);
 	}
 
 	void draw_pieces() {
@@ -177,44 +184,94 @@ private:
 	}
 
 	void process_click(int x, int y) {
-		auto cell = coord_to_cell(x, y);
+		auto clicked_cell = coord_to_cell(x, y);
 
 		if (
-			cell.x < 0 || cell.x >= 8
-			|| cell.y < 0 || cell.y >= 8
+			clicked_cell.x < 0 || clicked_cell.x >= 8
+			|| clicked_cell.y < 0 || clicked_cell.y >= 8
 		)
 			return;
 
-		auto piece = m_model.get(cell.x, cell.y);
-
 		if (m_active_cell.active()) {
-			auto current_pos = m_active_cell.pos();
-			auto current_cell = coord_to_cell(current_pos.x, current_pos.y);
+			bool moved = process_with_active_piece(clicked_cell);
 
-			if (current_cell == cell || !piece || piece->m_color != white) {
-				m_active_cell.set_active(false);
+			if (moved)
 				return;
-			}
 		}
 
+		auto piece = m_model.get(cell{ (int8_t)clicked_cell.x, (int8_t)clicked_cell.y });
 		if (!piece || piece->m_color != white)
 			return;
 
-		auto coords = cell_to_coord(cell.x, cell.y);
+		auto coords = cell_to_coord(clicked_cell.x, clicked_cell.y);
 		m_active_cell.set_pos(coords.x, coords.y);
 
 		m_active_cell.set_active(true);
 	}
 
+	bool process_with_active_piece(const sf::Vector2i& dst_cell) {
+		bool result = false;
+
+		auto current_pos = m_active_cell.pos();
+		auto current_cell = coord_to_cell(current_pos.x, current_pos.y);
+		
+		auto clicked_piece = m_model.get(cell{ (int8_t)dst_cell.x, (int8_t)dst_cell.y });
+		auto active_piece = m_model.get(cell{ (int8_t)current_cell.x, (int8_t)current_cell.y });
+
+		if (is_move(active_piece, dst_cell)) {
+			move(active_piece, dst_cell);
+			result = true;
+		}
+
+		m_active_cell.set_active(false);
+
+		return result;
+	}
+
+	bool is_move(std::shared_ptr<piece> piece, const sf::Vector2i& pos) {
+		return m_model.is_move_possible(*piece, cell{ (int8_t)pos.x, (int8_t)pos.y });
+	}
+
+	void move(std::shared_ptr<piece> piece, const sf::Vector2i& pos) {
+		swap(
+			m_pieces[piece->m_pos.x][piece->m_pos.y],
+			m_pieces[pos.x][pos.y]
+		);
+		m_model.move(*piece, cell{ (int8_t)pos.x, (int8_t)pos.y });
+	}
+
+	void draw_movements() {
+		auto current_pos = m_active_cell.pos();
+		auto current_cell = coord_to_cell(current_pos.x, current_pos.y);
+		auto active_piece = m_model.get(cell{ (int8_t)current_cell.x, (int8_t)current_cell.y });
+
+		std::vector<cell> moves;
+
+		m_model.possible_moves(*active_piece, moves);
+
+		for (const auto& m : moves) {
+			auto coord = cell_to_coord((int)m.x, (int)m.y);
+			m_movement_mark.set_pos(coord.x, coord.y);
+			m_movement_mark.draw(*m_window);
+		}
+	}
+
 	sf::Vector2i coord_to_cell(int x, int y) {
+		// NOTE: Начало отсчета у модели и у view
+		// NOTE: отличаются на 7 клеток по оси Y.
 		return {
 			(int)(float(x - m_border_size_x + 0.01 * m_cell_size_x) / m_cell_size_x),
-			(int)(float(y - m_border_size_y + 0.01 * m_cell_size_y) / m_cell_size_y)
+			7 - (int)(float(y - m_border_size_y + 0.01 * m_cell_size_y) / m_cell_size_y)
 		};
 	}
 
 	sf::Vector2f cell_to_coord(int cx, int cy) {
-		return { m_border_size_x + m_cell_size_x * cx, m_border_size_y + m_cell_size_y * cy };
+		// NOTE: Начало отсчета у модели и у view
+		// NOTE: отличаются на 7 клеток по оси Y.
+		return {
+			m_border_size_x + m_cell_size_x * cx,
+			m_border_size_y + m_cell_size_y * (7 - cy)
+		};
 	}
 
 	inline static const float border_coeff = 0.068;
@@ -222,6 +279,7 @@ private:
 	board board;
 	corners_model m_model;
 	active_cell m_active_cell;
+	movement_mark m_movement_mark;
 	std::shared_ptr<sf::RenderWindow> m_window;
 	std::vector<std::vector<piece_holder>> m_pieces;
 
