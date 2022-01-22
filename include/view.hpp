@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "corners_model.hpp"
+#include "dfs_ai.hpp"
 
 #include <SFML/Graphics.hpp>
 
@@ -124,6 +125,17 @@ public:
 
 			m_window->display();
 
+			// Сначала рисуем ход за белых, только потом
+			// отвечаем. Иначе ход не отобразится вовремя.
+			if (m_waiting_answer) {
+				float w;
+				auto answer = find_the_best_move(black, m_model, 5, 0, w);
+				sf::Vector2i c = { (int)answer.second.x, (int)answer.second.y };
+				move(answer.first, c);
+
+				m_waiting_answer = false;
+			}
+
 			sf::Event event;
 			while (m_window->pollEvent(event)) {
 				if (event.type == sf::Event::Closed)
@@ -238,6 +250,8 @@ private:
 			m_pieces[pos.x][pos.y]
 		);
 		m_model.move(*piece, cell{ (int8_t)pos.x, (int8_t)pos.y });
+
+		m_waiting_answer = true;
 	}
 
 	void draw_movements() {
@@ -282,6 +296,8 @@ private:
 	movement_mark m_movement_mark;
 	std::shared_ptr<sf::RenderWindow> m_window;
 	std::vector<std::vector<piece_holder>> m_pieces;
+
+	bool m_waiting_answer{ false };
 
 	float m_cell_size_x;
 	float m_cell_size_y;

@@ -5,6 +5,14 @@
 #include "board_game_model.hpp"
 
 
+float sqr(float x) {
+	return x * x;
+}
+
+float squared_dist(const cell& p, const cell& q) {
+	return sqr((float)p.x - (float)q.x) + sqr((float)p.y - (float)q.y);
+}
+
 class checker : public piece {
 public:
 	checker(cell c, color_t color) {
@@ -45,7 +53,27 @@ public:
 	 *	\return ....
 	 */
 	float position_weight() override {
-		return 0.f;
+		// Суммарные квадраты расстояний до финиша
+		float white_sdist = 0.f;
+		float black_sdist = 0.f;
+
+		auto calc_sdist = [this](const auto& pieces, const auto& finish) {
+			float sdist = 0.f;
+
+			for (const auto& p : pieces) {
+				if (!p)
+					continue;
+
+				sdist += squared_dist(finish, p->m_pos);
+			}
+
+			return sdist;
+		};
+
+		white_sdist = calc_sdist(m_whites, white_finish);
+		black_sdist = calc_sdist(m_blacks, black_finish);
+
+		return black_sdist - white_sdist;
 	}
 
 	std::shared_ptr<piece> get(const cell& c) override {
@@ -147,4 +175,7 @@ private:
 	std::vector<std::shared_ptr<piece>> m_blacks;
 
 	std::vector<std::vector<std::shared_ptr<piece>>> m_board;
+
+	inline static const cell white_finish = { 0, 7 };
+	inline static const cell black_finish = { 7, 0 };
 };
