@@ -14,16 +14,17 @@ struct cell {
 	int8_t x;
 	int8_t y;
 
-	friend bool operator==(const cell& left, const cell& right) {
-		return left.x == right.x && left.y == right.y;
-	}
+	friend bool operator==(const cell& left, const cell& right);
 };
 
 
 class piece {
 public:
+	cell pos() const;
+	color_t color() const;
 	virtual const std::vector<cell>& moves() const = 0;
 
+protected:
 	cell m_pos;
 	color_t m_color;
 };

@@ -1,11 +1,7 @@
-﻿#pragma once
+﻿#include "alpha_beta_ai.hpp"
 
-#include <limits>
+using namespace std;
 
-#include "board_game_model.hpp"
-
-
-using move_t = std::pair<std::shared_ptr<piece>, cell>;
 
 float alpha_beta_best_move(
     color_t color,
@@ -20,18 +16,18 @@ float alpha_beta_best_move(
     float weigth;
     cell reverse_pos;
     move_t the_best_move;
-    std::vector<cell> moves;
+    vector<cell> moves;
 
     if (color == white)
-        weigth = std::numeric_limits<float>::lowest();
+        weigth = numeric_limits<float>::lowest();
     else
-        weigth = std::numeric_limits<float>::max();
+        weigth = numeric_limits<float>::max();
 
     finish = false;
 
     // Делаем должный ход
     if (move.first) {
-        reverse_pos = move.first->m_pos;
+        reverse_pos = move.first->pos();
         game.move(*move.first, move.second);
     }
 
@@ -55,7 +51,7 @@ float alpha_beta_best_move(
         if (finish)
             continue;
 
-        auto current_pos = piece->m_pos;
+        auto current_pos = piece->pos();
         game.possible_moves(*piece, moves);
 
         for (const auto& move : moves) {
@@ -93,7 +89,7 @@ float alpha_beta_best_move(
                     break;
                 }
 
-                alpha = std::max(alpha, weigth);
+                alpha = max(alpha, weigth);
             }
             else {
                 if (wtmp < weigth) {
@@ -124,7 +120,7 @@ float alpha_beta_best_move(
                     break;
                 }
 
-                beta = std::min(beta, weigth);
+                beta = min(beta, weigth);
             }
         }
     }
@@ -139,8 +135,8 @@ float alpha_beta_best_move(
 
 
 move_t find_the_best_move(color_t color, board_game_model& game, int max_depth) {
-    float alpha = std::numeric_limits<float>::lowest();
-    float beta = std::numeric_limits<float>::max();
+    float alpha = numeric_limits<float>::lowest();
+    float beta = numeric_limits<float>::max();
 
     move_t best_move;
     alpha_beta_best_move(color, game, best_move, max_depth, 0, alpha, beta);
