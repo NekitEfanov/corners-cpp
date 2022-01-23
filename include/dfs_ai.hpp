@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <limits>
 
@@ -7,60 +7,143 @@
 
 using move_t = std::pair<std::shared_ptr<piece>, cell>;
 
-move_t find_the_best_move(
+float alpha_beta_best_move(
     color_t color,
     board_game_model& game,
+    move_t& move,
     int max_depth,
     int depth,
-    float &depth_weight
+    float alpha,
+    float beta
 ) {
-    cell current_pos;
-    cell current_enemy_pos;
+    bool finish;
+    float weigth;
+    cell reverse_pos;
+    move_t the_best_move;
     std::vector<cell> moves;
 
-    move_t enemy_move;
-    move_t the_best_move;
-
-    float min_weight;
     if (color == white)
-        min_weight = std::numeric_limits<float>::lowest();
+        weigth = std::numeric_limits<float>::lowest();
     else
-        min_weight = std::numeric_limits<float>::max();
+        weigth = std::numeric_limits<float>::max();
 
+    finish = false;
+
+    // Делаем должный ход
+    if (move.first) {
+        reverse_pos = move.first->m_pos;
+        game.move(*move.first, move.second);
+    }
+
+    bool has_winned = game.has_winner();
+
+    if (depth >= max_depth || has_winned) {
+        // Оценка позиции и быстрый выход
+
+        weigth = game.position_weight();
+
+        // Лайфхак, чтобы искать самый короткий путь к победе
+        if (has_winned)
+            weigth /= depth;
+
+        finish = true;
+    }
+
+    // Обходим все возможные ходы, вычисляем мин-макс
     const auto pieces = game.pieces(color);
     for (const auto& piece : pieces) {
+        if (finish)
+            continue;
+
         auto current_pos = piece->m_pos;
         game.possible_moves(*piece, moves);
 
         for (const auto& move : moves) {
-            game.move(*piece, move);
+            move_t current_move = { piece, move };
+            float wtmp = alpha_beta_best_move(
+                !color, game, current_move, max_depth, depth + 1, alpha, beta
+            );
 
-            if (depth < max_depth) {
-                float w = 0.f;
-
-                enemy_move = find_the_best_move(!color, game, max_depth, depth + 1, w);
-
-                if (enemy_move.first) {
-                    current_enemy_pos = enemy_move.first->m_pos;
-                    game.move(*enemy_move.first, enemy_move.second);
-                }
-
-                float k = (color == white) ? -1.f : 1.f;
-                if (k * w < k * min_weight) {
-                    min_weight = w;
+            if (color == white) {
+                if (wtmp > weigth) {
+                    weigth = wtmp;
                     the_best_move = { piece, move };
                 }
+                else if (wtmp == weigth) {
+                    // В случае равенства выбирается тот ход,
+                    // который мгновенно улучшает позицию
 
-                if (enemy_move.first)
-                    game.reverse(*enemy_move.first, current_enemy_pos);
+                    move_t best_cpy = the_best_move;
+                    move_t this_cpy = { piece, move };
+
+                    float best_instantly_w = alpha_beta_best_move(
+                        !color, game, best_cpy, max_depth, max_depth, alpha, beta
+                    );
+                    float this_instantly_w = alpha_beta_best_move(
+                        !color, game, this_cpy, max_depth, max_depth, alpha, beta
+                    );
+
+                    if (this_instantly_w > best_instantly_w)
+                        the_best_move = { piece, move };
+                }
+
+                // Бета отсечение
+                if (weigth >= beta) {
+                    finish = true;
+                    break;
+                }
+
+                alpha = std::max(alpha, weigth);
             }
+            else {
+                if (wtmp < weigth) {
+                    weigth = wtmp;
+                    the_best_move = { piece, move };
+                }
+                else if (wtmp == weigth) {
+                    // В случае равенства выбирается тот ход,
+                    // который мгновенно улучшает позицию
 
-            game.reverse(*piece, current_pos);
+                    move_t best_cpy = the_best_move;
+                    move_t this_cpy = { piece, move };
+
+                    float best_instantly_w = alpha_beta_best_move(
+                        !color, game, best_cpy, max_depth, max_depth, alpha, beta
+                    );
+                    float this_instantly_w = alpha_beta_best_move(
+                        !color, game, this_cpy, max_depth, max_depth, alpha, beta
+                    );
+
+                    if (this_instantly_w < best_instantly_w)
+                        the_best_move = { piece, move };
+                }
+
+                // Альфа отсечение
+                if (weigth <= alpha) {
+                    finish = true;
+                    break;
+                }
+
+                beta = std::min(beta, weigth);
+            }
         }
     }
 
-    if (depth >= max_depth)
-        depth_weight = game.position_weight();
+    if (move.first)
+        game.reverse(*move.first, reverse_pos);
 
-    return the_best_move;
+    move = the_best_move;
+
+    return weigth;
+}
+
+
+move_t find_the_best_move(color_t color, board_game_model& game, int max_depth) {
+    float alpha = std::numeric_limits<float>::lowest();
+    float beta = std::numeric_limits<float>::max();
+
+    move_t best_move;
+    alpha_beta_best_move(color, game, best_move, max_depth, 0, alpha, beta);
+
+    return best_move;
 }

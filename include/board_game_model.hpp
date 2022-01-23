@@ -63,6 +63,8 @@ public:
 	 */
 	virtual void move(const piece& p, const cell& c) = 0;
 
+	virtual bool has_winner() const = 0;
+
 //protected:
 	/*! \brief Возвращает все 
 	 *	\return ....

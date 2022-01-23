@@ -41,7 +41,7 @@ public:
 				m_board[i][j] = std::make_shared<checker>(cell{ i, j }, white);
 				m_whites.push_back(m_board[i][j]);
 			}
-
+		
 		for (int8_t i = 0; i < 3; ++i)
 			for (int8_t j = 5; j < 8; ++j) {
 				m_board[i][j] = std::make_shared<checker>(cell{ i, j }, black);
@@ -60,18 +60,20 @@ public:
 		auto calc_sdist = [this](const auto& pieces, const auto& finish) {
 			float sdist = 0.f;
 
-			for (const auto& p : pieces) {
-				if (!p)
-					continue;
-
+			for (const auto& p : pieces)
 				sdist += squared_dist(finish, p->m_pos);
-			}
 
 			return sdist;
 		};
 
 		white_sdist = calc_sdist(m_whites, white_finish);
 		black_sdist = calc_sdist(m_blacks, black_finish);
+
+		if (is_white_winner())
+			return std::numeric_limits<float>::max();
+
+		if (is_black_winner())
+			return std::numeric_limits<float>::lowest();
 
 		return black_sdist - white_sdist;
 	}
@@ -152,12 +154,34 @@ public:
 		move_unchecked(p, c);
 	}
 
+	bool has_winner() const override {
+		return is_white_winner() || is_black_winner();
+	}
+
 //protected:
 	/*! \brief Возвращает все 
 	 *	\return ....
 	 */
 	void reverse(const piece& p, const cell& c) override {
 		move_unchecked(p, c);
+	}
+
+	bool is_white_winner() const {
+		bool flag = true;
+		for (int8_t i = 0; i < 3; ++i)
+			for (int8_t j = 5; j < 8; ++j)
+				flag = flag && m_board[i][j] && m_board[i][j]->m_color == white;
+
+		return flag;
+	}
+
+	bool is_black_winner() const {
+		bool flag = true;
+		for (int8_t i = 5; i < 8; ++i)
+			for (int8_t j = 0; j < 3; ++j)
+				flag = flag && m_board[i][j] && m_board[i][j]->m_color == black;
+
+		return flag;
 	}
 
 private:
@@ -171,11 +195,13 @@ private:
 		board_piece->m_pos = c;
 	}
 
+
+
 	std::vector<std::shared_ptr<piece>> m_whites;
 	std::vector<std::shared_ptr<piece>> m_blacks;
 
 	std::vector<std::vector<std::shared_ptr<piece>>> m_board;
 
-	inline static const cell white_finish = { 0, 7 };
-	inline static const cell black_finish = { 7, 0 };
+	inline static const cell white_finish = { -1, 8 };
+	inline static const cell black_finish = { 8, -1 };
 };

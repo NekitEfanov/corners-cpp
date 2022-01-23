@@ -128,12 +128,12 @@ public:
 			// Сначала рисуем ход за белых, только потом
 			// отвечаем. Иначе ход не отобразится вовремя.
 			if (m_waiting_answer) {
-				float w;
-				auto answer = find_the_best_move(black, m_model, 5, 0, w);
+				auto answer = find_the_best_move(black, m_model, 7);
 				sf::Vector2i c = { (int)answer.second.x, (int)answer.second.y };
 				move(answer.first, c);
-
 				m_waiting_answer = false;
+
+				check_winner();
 			}
 
 			sf::Event event;
@@ -207,8 +207,11 @@ private:
 		if (m_active_cell.active()) {
 			bool moved = process_with_active_piece(clicked_cell);
 
-			if (moved)
+			if (moved) {
+				check_winner();
+
 				return;
+			}
 		}
 
 		auto piece = m_model.get(cell{ (int8_t)clicked_cell.x, (int8_t)clicked_cell.y });
@@ -286,6 +289,20 @@ private:
 			m_border_size_x + m_cell_size_x * cx,
 			m_border_size_y + m_cell_size_y * (7 - cy)
 		};
+	}
+
+	void check_winner() {
+		if (m_model.has_winner()) {
+			// В данном случае это означает победу белых
+			// (т.к. ждем ход черных).
+			if (m_waiting_answer)
+				std::cout << "White win!";
+			else
+				std::cout << "Black win!";
+
+			// TODO: нормально выводить на экран победу и блокировать игру
+			exit(0);
+		}
 	}
 
 	inline static const float border_coeff = 0.068;
