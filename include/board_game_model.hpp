@@ -24,6 +24,8 @@ public:
 	color_t color() const;
 	virtual const std::vector<cell>& moves() const = 0;
 
+	void set_pos(const cell& c);
+
 protected:
 	cell m_pos;
 	color_t m_color;
@@ -32,43 +34,76 @@ protected:
 
 class board_game_model {
 public:
-	/*! \brief Расчет оценки текущей позиции
-	 *	\return ....
+	//! A pure virtual member.
+	/*!
+	 * Расчет оценки текущей позиции аналогично шахматным симуляторам.
+	 * Возвращаемая оценка позиции должна быть от -inf до inf.
+	 * При этом, положительная оценка указывает на преимущество
+	 * белых, отрицательная - на преимущество черных.
+	   \return Оценка текущей позиции.
 	 */
 	virtual float position_weight() = 0;
 
+	//! A pure virtual member.
+	/*!
+	 * Возвращает фигуру, находящуюся в клетке. Может вернуть nullptr.
+	   \param c клетка для получения фигуры.
+	   \return фигура в клетке c.
+	 */
 	virtual std::shared_ptr<piece> get(const cell& c) = 0;
 
-	/*! \brief Возвращает все 
-	 *	\return ....
+	//! A pure virtual member.
+	/*!
+	 * Возвращает все фигуры на доске.
+	   \return массив фигур.
 	 */
 	virtual std::vector<std::shared_ptr<piece>> pieces() = 0;
 
-	/*! \brief Возвращает все 
-	 *	\return ....
+	//! A pure virtual member.
+	/*!
+	 * Возвращает все фигуры заданного цвета на доске.
+	   \param c цвет фигуры.
+	   \return массив фигур.
 	 */
 	virtual const std::vector<std::shared_ptr<piece>>& pieces(color_t color) = 0;
 
-	/*! \brief Возвращает все 
-	 *	\return ....
+	//! A pure virtual member.
+	/*!
+	 * Возвращает все возможные ходы для заданной фигуры.
 	 */
 	virtual void possible_moves(const piece& p, std::vector<cell> &result) = 0;
 
-	/*! \brief Возвращает все 
-	 *	\return ....
+	//! A pure virtual member.
+	/*!
+	 * WRITEME
 	 */
 	virtual bool is_move_possible(const piece& p, const cell& c) = 0;
 
-	/*! \brief Возвращает все 
-	 *	\return ....
+	//! A pure virtual member.
+	/*!
+	 * WRITEME
 	 */
 	virtual void move(const piece& p, const cell& c) = 0;
 
 	virtual bool has_winner() const = 0;
 
-//protected:
-	/*! \brief Возвращает все 
-	 *	\return ....
+protected:
+	//! A pure virtual member.
+	/*!
+	 * Небезопасный откат (совершение) хода. Необходимо для ai.
 	 */
 	virtual void reverse(const piece& p, const cell& c) = 0;
+
+	// FIXME
+	using move_t = std::pair<std::shared_ptr<piece>, cell>;
+
+	friend float alpha_beta_best_move(
+		color_t color,
+		board_game_model& game,
+		move_t& move,
+		int max_depth,
+		int depth,
+		float alpha,
+		float beta
+	);
 };

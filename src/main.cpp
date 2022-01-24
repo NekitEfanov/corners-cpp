@@ -1,10 +1,12 @@
-#include "view.hpp"
+#include "corners_view.hpp"
+
 #include <iostream>
 
 #include <SFML/Graphics.hpp>
 
+
 using namespace std;
-using namespace sf;
+
 
 int main()
 {

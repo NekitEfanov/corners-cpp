@@ -12,3 +12,7 @@ cell piece::pos() const {
 color_t piece::color() const {
 	return m_color;
 }
+
+void piece::set_pos(const cell& c) {
+	m_pos = c;
+}

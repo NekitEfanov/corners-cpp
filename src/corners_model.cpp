@@ -10,7 +10,7 @@ const vector<cell> checker::m_moves = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }
 
 
 checker::checker(cell c, color_t color) {
-	pos() = c;
+	m_pos = c;
 	m_color = color;
 }
 
@@ -107,6 +107,10 @@ void corners_model::move(const piece& p, const cell& c) {
 	move_unchecked(p, c);
 }
 
+void corners_model::reverse(const piece& p, const cell& c) {
+	move_unchecked(p, c);
+}
+
 bool corners_model::has_winner() const {
 	return is_white_winner() || is_black_winner();
 }
@@ -154,5 +158,5 @@ bool corners_model::primary_check(const cell& c) {
 void corners_model::move_unchecked(const piece& p, const cell& c) {
 	auto board_piece = m_board[p.pos().x][p.pos().y];
 	swap(m_board[p.pos().x][p.pos().y], m_board[c.x][c.y]);
-	board_piece->pos() = c;
+	board_piece->set_pos(c);
 }
