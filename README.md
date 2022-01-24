@@ -1,4 +1,5 @@
 Сборка:
+
 	1. mkdir build
 	2. cd ./build
 	3. cmake ../ [-A x64]*    *- для Windows
